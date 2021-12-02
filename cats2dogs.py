@@ -1,437 +1,201 @@
-!pip3 install streamlit
 import streamlit as st
-import pandas as pd
-import numpy as np
-st.title('Uber pickups in NYC')
-	
-DATE_COLUMN = 'date/time'
-DATA_URL = ('https://s3-us-west-2.amazonaws.com/'
-              'streamlit-demo-data/uber-raw-data-sep14.csv.gz')
-	
-@st.cache
-def load_data(nrows):
-    data = pd.read_csv(DATA_URL, nrows=nrows)
-    lowercase = lambda x: str(x).lower()
-    data.rename(lowercase, axis='columns', inplace=True)
-    data[DATE_COLUMN] = pd.to_datetime(data[DATE_COLUMN])
-    return data
-	
-data_load_state = st.text('Loading data...')
-data = load_data(10000)
-data_load_state.text("Done! (using st.cache)")
-	
-if st.checkbox('Show raw data'):
-    st.subheader('Raw data')
-    st.write(data)
-	
-st.subheader('Number of pickups by hour')
-hist_values = np.histogram(data[DATE_COLUMN].dt.hour, bins=24, range=(0,24))[0]
-st.bar_chart(hist_values)
-	
-hour_to_filter = st.slider('hour', 0, 23, 17)
-filtered_data = data[data[DATE_COLUMN].dt.hour == hour_to_filter]
-	
-st.subheader('Map of all pickups at %s:00' % hour_to_filter)
-st.map(filtered_data)
+from PIL import Image, ImageFilter, ImageEnhance
+import os
+from datetime import datetime
 
-# # -*- coding: utf-8 -*-
-# !pip install streamlit
-# !pip install tensorflow-addons
-# !pip install tensorflow==2.0.0-beta1
+# 깃 연동ㅇㅇ
+# 이미지 파일 열어주는 함수
+# 이걸 써야 불러온 파일이 열림
+def load_image(image_file):
+    img = Image.open(image_file)
+    return img
 
-# import tensorflow as tf
-# from tensorflow import keras
-# from keras.layers import LSTM, Conv2D, Activation, Concatenate, Conv2DTranspose, LeakyReLU, Input
-# from keras.models import Model
+# 디렉토리와 이미지를 주면 해당 디렉토리에 이미지를 저장하는 함수
+def save_upload_file(directory, img):
+    # 1. 디렉토리가 있는지 확인해서 없으면 만든다.
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    # 2. 이제는 디렉토리가 있으니까 파일을 저장
+    file_name = datetime.now().isoformat().replace(':', "-").replace('.','-')
+    # 경로설정이므로 / 를 추가해야함
+    img.save(directory + '/' + file_name + 'a.jpg')
+    return st.success('Saved file : {} in {}'.format(file_name + '.jpg',directory))
 
-# from keras.models import Sequential 
-# from tensorflow.keras.optimizers import Adam
-# #import tensorflow_addons as tfa
 
-# import tensorflow_datasets as tfds
-# import os
-# import time
-# import matplotlib.pyplot as plt
-# from IPython.display import clear_output
+def main() :
 
-# from os import listdir
-# import numpy as np
-# from numpy import asarray
-# from numpy import vstack
-# from numpy import ones
-# from numpy import zeros
-# from keras.preprocessing.image import img_to_array
-# from keras.preprocessing.image import load_img
-# from numpy import savez_compressed
+    print(datetime.now().isoformat())
 
-# import random
-# from random import randint
+    st.subheader("이미지 파일 업로드")
+    # 이미지 파일 업로드 코드
+    image_file_list = st.file_uploader("upload Image", type = ['png','jpg','jpeg'], accept_multiple_files=True)
+   
+    if image_file_list is not None :
+        # 2 각 파일을 이미지로 바꿔줘야함
 
-# from google.colab import drive
-# drive.mount('/content/drive')
 
-# !ls "/content/drive/My Drive/dataset"
+        image_list = []
+        # 2-1 모든 파일이 image_list에 이미지로 저장됨
+        for image_file in image_file_list :
+            img = load_image(image_file)
+            image_list.append(img)
+        
+        # # 3 이미지 화면에 확인해보자
+        # for img in image_list:
+        #     st.image(img)
 
-# # load all images in a directory into memory
-# def load_images(path, size=(256,256)):
-# 	data_list = list()
-# 	# enumerate filenames in directory, assume all are images
-# 	for filename in listdir(path):
-# 		# load and resize the image
-# 		pixels = load_img(path + filename, target_size=size)
-# 		# convert to numpy array
-# 		pixels = img_to_array(pixels)
-# 		# store
-# 		data_list.append(pixels)
-# 	return asarray(data_list)
+        # 옵션리스트를 화면에 표시하자
+        option_list = ['Show Image', 'Rotate Image', 'Create Thumbnail', 
+        'Crop Images', 'Merge Image', 'Flip Image', 'Change Color', 
+        'Filters - Sharpen', 'Filters - Edge Enhance', 'Contrast Image']
 
-# # dataset path
-# path = '/content/drive/My Drive/dataset/'
-# # load dataset A
-# dataA1 = load_images(path + 'small_train_cats/')
-# dataAB = load_images(path + 'small_test_cats/')
-# dataA = vstack((dataA1, dataAB))
-# print('Loaded dataA: ', dataA.shape)
-# # load dataset B
-# dataB1 = load_images(path + 'small_train_dogs/')
-# dataB2 = load_images(path + 'small_test_dogs/')
-# dataB = vstack((dataB1, dataB2))
-# print('Loaded dataB: ', dataB.shape)
-# # save as compressed numpy array
-# filename = 'catstodogs_256.npz'
-# savez_compressed(filename, dataA, dataB)
-# print('Saved dataset: ', filename)
+        option = st.selectbox('옵션을 선택하세요', option_list )
 
-# # load and plot the prepared dataset
-# from numpy import load
-# from matplotlib import pyplot
-# # load the dataset
-# data = load('catstodogs_256.npz')
-# dataA, dataB = data['arr_0'], data['arr_1']
-# print('Loaded: ', dataA.shape, dataB.shape)
-# # plot source images
-# n_samples = 3
-# for i in range(n_samples):
-# 	pyplot.subplot(2, n_samples, 1 + i)
-# 	pyplot.axis('off')
-# 	pyplot.imshow(dataA[i].astype('uint8'))
-# # plot target image
-# for i in range(n_samples):
-# 	pyplot.subplot(2, n_samples, 1 + n_samples + i)
-# 	pyplot.axis('off')
-# 	pyplot.imshow(dataB[i].astype('uint8'))
-# pyplot.show()
+        if option == 'Show Image':
+            original_img_list = []
+            for img in image_list:
+                st.image(img)
+                original_img_list.append(img)
+            derectory = st.text_input('파일경로 입력')
+            if st.button('저장'):
+                # 3 파일저장
+                for img in original_img_list :
+                    save_upload_file(derectory, img)
+            
 
-# # define the discriminator model
-# def define_discriminator(image_shape):
-# 	# weight initialization
-# 	init = tf.keras.initializers.RandomNormal(stddev=0.02)
-# 	# source image input
-# 	in_image = tf.keras.Input(shape=image_shape)
-# 	# C64
-# 	d = Conv2D(64, (4,4), strides=(2,2), padding='same', kernel_initializer=init)(in_image)
-# 	d = LeakyReLU(alpha=0.2)(d)
-# 	# C128
-# 	d = Conv2D(128, (4,4), strides=(2,2), padding='same', kernel_initializer=init)(d)
-# 	#d = InstanceNormalization(axis=-1)(d)
-# 	d = LeakyReLU(alpha=0.2)(d)
-# 	# C256
-# 	d = Conv2D(256, (4,4), strides=(2,2), padding='same', kernel_initializer=init)(d)
-# 	#d = InstanceNormalization(axis=-1)(d)
-# 	d = LeakyReLU(alpha=0.2)(d)
-# 	# C512
-# 	d = Conv2D(512, (4,4), strides=(2,2), padding='same', kernel_initializer=init)(d)
-# 	#d = InstanceNormalization(axis=-1)(d)
-# 	d = LeakyReLU(alpha=0.2)(d)
-# 	# second last output layer
-# 	d = Conv2D(512, (4,4), padding='same', kernel_initializer=init)(d)
-# 	#d = InstanceNormalization(axis=-1)(d)
-# 	d = LeakyReLU(alpha=0.2)(d)
-# 	# patch output
-# 	patch_out = Conv2D(1, (4,4), padding='same', kernel_initializer=init)(d)
-# 	# define model
-# 	model = Model(in_image, patch_out)
-# 	# compile model
-# 	model.compile(loss='mse', optimizer=Adam(lr=0.0002, beta_1=0.5), loss_weights=[0.5])
-# 	return model
+        elif option == 'Rotate Image':
 
-# def resnet_block(n_filters, input_layer):
-# 	# weight initialization
-# 	init = tf.keras.initializers.RandomNormal(stddev=0.02)
-# 	# first layer convolutional layer
-# 	g = Conv2D(n_filters, (3,3), padding='same', kernel_initializer=init)(input_layer)
-# 	#g = InstanceNormalization(axis=-1)(g)
-# 	g = Activation('relu')(g)
-# 	# second convolutional layer
-# 	g = Conv2D(n_filters, (3,3), padding='same', kernel_initializer=init)(g)
-# 	#g = InstanceNormalization(axis=-1)(g)
-# 	# concatenate merge channel-wise with input layer
-# 	g = Concatenate()([g, input_layer])
-# 	return g
+            # 1 유저가 입력
+            angle = st.slider('각도를 설정하세요', 0,360)
+            # 2 모든 이미지를 돌린다.
+            transformed_img_list = []
+            for img in image_list:
+                rotated_img = img.rotate(angle)
+                st.image(rotated_img)
+                transformed_img_list.append(rotated_img)
 
-# # define the standalone generator model
-# def define_generator(image_shape, n_resnet=9):
-# 	# weight initialization
-# 	init = tf.keras.initializers.RandomNormal(stddev=0.02)
-# 	# image input
-# 	in_image = tf.keras.Input(shape=image_shape)
-# 	# c7s1-64
-# 	g = Conv2D(64, (7,7), padding='same', kernel_initializer=init)(in_image)
-# 	#g = tfa.layers.InstanceNormalization(axis=-1)(g)
-# 	g = Activation('relu')(g)
-# 	# d128
-# 	g = Conv2D(128, (3,3), strides=(2,2), padding='same', kernel_initializer=init)(g)
-# 	#g = tfa.layers.InstanceNormalization(axis=-1)(g)
-# 	g = Activation('relu')(g)
-# 	# d256
-# 	g = Conv2D(256, (3,3), strides=(2,2), padding='same', kernel_initializer=init)(g)
-# 	#g = tfa.layers.InstanceNormalization(axis=-1)(g)
-# 	g = Activation('relu')(g)
-# 	# R256
-# 	for _ in range(n_resnet):
-# 		g = resnet_block(256, g)
-# 	# u128
-# 	g = Conv2DTranspose(128, (3,3), strides=(2,2), padding='same', kernel_initializer=init)(g)
-# 	#g = tfa.layers.InstanceNormalization(axis=-1)(g)
-# 	g = Activation('relu')(g)
-# 	# u64
-# 	g = Conv2DTranspose(64, (3,3), strides=(2,2), padding='same', kernel_initializer=init)(g)
-# 	#g = tfa.layers.InstanceNormalization(axis=-1)(g)
-# 	g = Activation('relu')(g)
-# 	# c7s1-3
-# 	g = Conv2D(3, (7,7), padding='same', kernel_initializer=init)(g)
-# 	#g = tfa.layers.InstanceNormalization(axis=-1)(g)
-# 	out_image = Activation('tanh')(g)
-# 	# define model
-# 	model = Model(in_image, out_image)
-# 	return model
-
-# # define a composite model for updating generators by adversarial and cycle loss
-# def define_composite_model(g_model_1, d_model, g_model_2, image_shape):
-# 	# ensure the model we're updating is trainable
-# 	g_model_1.trainable = True
-# 	# mark discriminator as not trainable
-# 	d_model.trainable = False
-# 	# mark other generator model as not trainable
-# 	g_model_2.trainable = False
-# 	# discriminator element
-# 	input_gen = Input(shape=image_shape)
-# 	gen1_out = g_model_1(input_gen)
-# 	output_d = d_model(gen1_out)
-# 	# identity element
-# 	input_id = Input(shape=image_shape)
-# 	output_id = g_model_1(input_id)
-# 	# forward cycle
-# 	output_f = g_model_2(gen1_out)
-# 	# backward cycle
-# 	gen2_out = g_model_2(input_id)
-# 	output_b = g_model_1(gen2_out)
-# 	# define model graph
-# 	model = Model([input_gen, input_id], [output_d, output_id, output_f, output_b])
-# 	# define optimization algorithm configuration
-# 	opt = Adam(lr=0.0002, beta_1=0.5)
-# 	# compile model with weighting of least squares loss and L1 loss
-# 	model.compile(loss=['mse', 'mae', 'mae', 'mae'], loss_weights=[1, 5, 10, 10], optimizer=opt)
-# 	return model
-
-# # load and prepare training images
-# def load_real_samples(filename):
-# 	# load the dataset
-# 	data = load(filename)
-# 	# unpack arrays
-# 	X1, X2 = data['arr_0'], data['arr_1']
-# 	# scale from [0,255] to [-1,1]
-# 	X1 = (X1 - 127.5) / 127.5
-# 	X2 = (X2 - 127.5) / 127.5
-# 	return [X1, X2]
-
-# # select a batch of random samples, returns images and target
-# def generate_real_samples(dataset, n_samples, patch_shape):
-# 	# choose random instances
-# 	ix = np.random.randint(0, dataset.shape[0], n_samples)
-# 	# retrieve selected images
-# 	X = dataset[ix]
-# 	# generate 'real' class labels (1)
-# 	y = ones((n_samples, patch_shape, patch_shape, 1))
-# 	return X, y
-
-# # generate a batch of images, returns images and targets
-# def generate_fake_samples(g_model, dataset, patch_shape):
-# 	# generate fake instance
-# 	X = g_model.predict(dataset)
-# 	# create 'fake' class labels (0)
-# 	y = zeros((len(X), patch_shape, patch_shape, 1))
-# 	return X, y
-
-# # save the generator models to file
-# def save_models(step, g_model_AtoB, g_model_BtoA):
-# 	# save the first generator model
-# 	filename1 = 'g_model_AtoB_%06d.h5' % (step+1)
-# 	g_model_AtoB.save(filename1)
-# 	# save the second generator model
-# 	filename2 = 'g_model_BtoA_%06d.h5' % (step+1)
-# 	g_model_BtoA.save(filename2)
-# 	print('>Saved: %s and %s' % (filename1, filename2))
-
-# # generate samples and save as a plot and save the model
-# def summarize_performance(step, g_model, trainX, name, n_samples=5):
-# 	# select a sample of input images
-# 	X_in, _ = generate_real_samples(trainX, n_samples, 0)
-# 	# generate translated images
-# 	X_out, _ = generate_fake_samples(g_model, X_in, 0)
-# 	# scale all pixels from [-1,1] to [0,1]
-# 	X_in = (X_in + 1) / 2.0
-# 	X_out = (X_out + 1) / 2.0
-# 	# plot real images
-# 	for i in range(n_samples):
-# 		pyplot.subplot(2, n_samples, 1 + i)
-# 		pyplot.axis('off')
-# 		pyplot.imshow(X_in[i])
-# 	# plot translated image
-# 	for i in range(n_samples):
-# 		pyplot.subplot(2, n_samples, 1 + n_samples + i)
-# 		pyplot.axis('off')
-# 		pyplot.imshow(X_out[i])
-# 	# save plot to file
-# 	filename1 = '%s_generated_plot_%06d.png' % (name, (step+1))
-# 	pyplot.savefig(filename1)
-# 	pyplot.close()
-
-# # update image pool for fake images
-# def update_image_pool(pool, images, max_size=30):
-# 	selected = list()
-# 	for i in images:
-# 		if len(pool) < max_size:
-# 			# stock the pool
-# 			pool.append(i)
-# 			selected.append(i)
-# 		#elif random() < 0.5:
-# 			# use image, but don't add it to the pool
-# 			#selected.append(i)
-# 		else:
-# 			# replace an existing image and use replaced image
-# 			ix = randint(0, len(pool))
-# 			selected.append(pool[ix])
-# 			pool[ix] = i
-# 	return asarray(selected)
-
-# def train(d_model_A, d_model_B, g_model_AtoB, g_model_BtoA, c_model_AtoB, c_model_BtoA, dataset):
-# 	# define properties of the training run
-# 	n_epochs, n_batch, = 1, 1
-# 	# determine the output square shape of the discriminator
-# 	n_patch = d_model_A.output_shape[1]
-# 	# unpack dataset
-# 	trainA, trainB = dataset
-# 	# prepare image pool for fakes
-# 	poolA, poolB = list(), list()
-# 	# calculate the number of batches per training epoch
-# 	bat_per_epo = int(len(trainA) / n_batch)
-# 	# calculate the number of training iterations
-# 	n_steps = bat_per_epo * n_epochs
-# 	# manually enumerate epochs
-# 	for i in range(n_steps):
-# 		# select a batch of real samples
-# 		X_realA, y_realA = generate_real_samples(trainA, n_batch, n_patch)
-# 		X_realB, y_realB = generate_real_samples(trainB, n_batch, n_patch)
-# 		# generate a batch of fake samples
-# 		X_fakeA, y_fakeA = generate_fake_samples(g_model_BtoA, X_realB, n_patch)
-# 		X_fakeB, y_fakeB = generate_fake_samples(g_model_AtoB, X_realA, n_patch)
-# 		# update fakes from pool
-# 		X_fakeA = update_image_pool(poolA, X_fakeA)
-# 		X_fakeB = update_image_pool(poolB, X_fakeB)
-# 		# update generator B->A via adversarial and cycle loss
-# 		g_loss2, _, _, _, _  = c_model_BtoA.train_on_batch([X_realB, X_realA], [y_realA, X_realA, X_realB, X_realA])
-# 		# update discriminator for A -> [real/fake]
-# 		dA_loss1 = d_model_A.train_on_batch(X_realA, y_realA)
-# 		dA_loss2 = d_model_A.train_on_batch(X_fakeA, y_fakeA)
-# 		# update generator A->B via adversarial and cycle loss
-# 		g_loss1, _, _, _, _ = c_model_AtoB.train_on_batch([X_realA, X_realB], [y_realB, X_realB, X_realA, X_realB])
-# 		# update discriminator for B -> [real/fake]
-# 		dB_loss1 = d_model_B.train_on_batch(X_realB, y_realB)
-# 		dB_loss2 = d_model_B.train_on_batch(X_fakeB, y_fakeB)
-# 		# summarize performance
-# 		print('>%d, dA[%.3f,%.3f] dB[%.3f,%.3f] g[%.3f,%.3f]' % (i+1, dA_loss1,dA_loss2, dB_loss1,dB_loss2, g_loss1,g_loss2))
-# 		# evaluate the model performance every so often
-# 		if (i+1) % (bat_per_epo * 1) == 0:
-# 			# plot A->B translation
-# 			summarize_performance(i, g_model_AtoB, trainA, 'AtoB')
-# 			# plot B->A translation
-# 			summarize_performance(i, g_model_BtoA, trainB, 'BtoA')
-# 		if (i+1) % (bat_per_epo * 3) == 0:
-# 			# save the models
-# 			save_models(i, g_model_AtoB, g_model_BtoA)
-
-# # load image data
-# dataset = load_real_samples('catstodogs_256.npz')
-# print('Loaded', dataset[0].shape, dataset[1].shape)
-# # define input shape based on the loaded dataset
-# image_shape = dataset[0].shape[1:]
-
-# # generator: A -> B
-# g_model_AtoB = define_generator(image_shape)
-# # generator: B -> A
-# g_model_BtoA = define_generator(image_shape)
-# # discriminator: A -> [real/fake]
-# d_model_A = define_discriminator(image_shape)
-# # discriminator: B -> [real/fake]
-# d_model_B = define_discriminator(image_shape)
-# # composite: A -> B -> [real/fake, A]
-# c_model_AtoB = define_composite_model(g_model_AtoB, d_model_B, g_model_BtoA, image_shape)
-# # composite: B -> A -> [real/fake, B]
-# c_model_BtoA = define_composite_model(g_model_BtoA, d_model_A, g_model_AtoB, image_shape)
-
-# # train models
-# train(d_model_A, d_model_B, g_model_AtoB, g_model_BtoA, c_model_AtoB, c_model_BtoA, dataset)
-
-# ...
-# # load dataset
-# A_data, B_data = load_real_samples('catstodogs_256.npz')
-# print('Loaded', A_data.shape, B_data.shape)
-
-# ...
-# # load the models
-# cust = {'InstanceNormalization': InstanceNormalization}
-# model_AtoB = load_model('g_model_AtoB_089025.h5', cust)
-# model_BtoA = load_model('g_model_BtoA_089025.h5', cust)
-
-# def select_sample(dataset, n_samples):
-# 	# choose random instances
-# 	ix = randint(0, dataset.shape[0], n_samples)
-# 	# retrieve selected images
-# 	X = dataset[ix]
-# 	return X
-
-# # plot A->B->A
-# A_real = select_sample(A_data, 1)
-# B_generated  = model_AtoB.predict(A_real)
-# A_reconstructed = model_BtoA.predict(B_generated)
-
-# def show_plot(imagesX, imagesY1, imagesY2):
-# 	images = vstack((imagesX, imagesY1, imagesY2))
-# 	titles = ['Real', 'Generated', 'Reconstructed']
-# 	# scale from [-1,1] to [0,1]
-# 	images = (images + 1) / 2.0
-# 	# plot images row by row
-# 	for i in range(len(images)):
-# 		# define subplot
-# 		pyplot.subplot(1, len(images), 1 + i)
-# 		# turn off axis
-# 		pyplot.axis('off')
-# 		# plot raw pixel data
-# 		pyplot.imshow(images[i])
-# 		# title
-# 		pyplot.title(titles[i])
-# 	pyplot.show()
-
-# show_plot(A_real, B_generated, A_reconstructed)
+            derectory = st.text_input('파일경로 입력')
+            if st.button('저장'):
+                # 3 파일저장
+                for img in transformed_img_list :
+                    save_upload_file(derectory, img)
 
 
 
+        elif option == 'Create Thumbnail':
+            # 원본보다 큰건 예외처리(에러나니까)해야함
+            # 먼저 이미지의 사이즈를 알아야겠다.
 
-# ## Title
-# st.title("Streamlit Tutorial")
-# ## Header/Subheader
-# st.header("This is header")
-# st.subheader("This is subheader")
-# ## Text
-# st.text("Hello Streamlit! 이 글은 튜토리얼 입니다.")
+            # print(img.size)
+            width = st.number_input('너비 입력', 1, 100)
+            height = st.number_input('높이 입력', 1, 100)
+
+            size = (width, height)
+
+            transformed_img_list = []
+            for img in image_list:
+                img.thumbnail(size)
+                st.image(img)
+                transformed_img_list.append(img)
+            # 3 파일저장    
+            derectory = st.text_input('파일경로 입력')
+            if st.button('저장'):
+                for img in transformed_img_list :
+                    save_upload_file(derectory, img)
+
+
+        # elif option == 'Crop Images':
+        #     # 왼쪽 위부분부터, 너비와 깊이만큼 잘라라
+        #     # 왼쪽 위부분 좌표(50,100)
+        #     # 너비 x축으로, 깊이 y축으로 (200,200)
+        #     start_x = st.number_input('시작 x값', 0, img.size[0]-1)
+        #     start_y = st.number_input('시작 y값', 0, img.size[1]-1)
+        #     max_width = img.size[0] - start_x
+        #     max_height = img.size[1] - start_y
+        #     width = st.number_input('너비 입력', 1, max_width)
+        #     height = st.number_input('높이 입력', 1, max_height)
+
+        #     box = (start_x, start_y, start_x + width, start_y + height)
+        #     cropped_img = img.crop(box)
+        #     # cropped_img.save('data/crop.png')
+        #     st.image(cropped_img)
+        #     # st.image(box)
+
+        # elif option == 'Merge Image' :
+
+        #     merge_file = st.file_uploader('upload Image', type=['png', 'jpg', 
+        #                                     'jpeg'], key = 'merge_img')
+
+        #     if merge_img is not None:
+
+        #         merge_img = load_image(merge_file)
+
+        #         start_x = st.number_input('시작 x 좌표', 0, img.size[0]-1)
+        #         start_y = st.number_input('시작 y 좌표', 0, img.size[1]-1)     
+
+        #         position = (start_x, start_y)
+        #         img.paste(merge_img, position)
+        #         st.image(img)
+        
+        elif option == 'Flip Image' :
+            status = st.radio('플립 선택', ['FLIP_TOP_BOTTOM','FLIP_LEFT_RIGHT'])
+
+            if status == "FLIP_TOP_BOTTOM" :
+                transformed_img_list = []
+                for img in image_list :
+                    flipped_img = img.transpose(Image.FLIP_TOP_BOTTOM)
+                    st.image(flipped_img)
+                    transformed_img_list.append(flipped_img)
+
+            elif status == 'FLIP_LEFT_RIGHT' :
+                transformed_img_list = []
+                for img in image_list :
+                    flipped_img = img.transpose(Image.FLIP_LEFT_RIGHT)
+                    st.image(flipped_img)
+                    transformed_img_list.append(flipped_img)
+
+            # 저장은 여기서
+            directory = st.text_input('파일 경로 입력')
+            if st.button('파일 저장') :
+                # 파일 저장
+                for img in transformed_img_list :
+                    save_upload_file(directory, img)
+
+
+        # elif option == 'Change Color':
+
+        #     status = st.radio('색 변경', ['RGB', 'Gray Scale', 'B & W'])
+        #     if status =='RGB':
+        #         color = 'RGB'
+        #     elif status =='Gray Scale':
+        #         color = 'L'
+        #     elif status =='B & W':
+        #         color = '1'
+        #     bw = img.convert(color)
+        #     st.image(bw)
+
+        # elif option == 'Filters - Sharpen':
+        #     sharp_img = img.filter(ImageFilter.SHARPEN)
+        #     st.image(sharp_img)
+
+        # elif option == 'Filters - Edge Enhance' :
+        #     edge_img = img.filter(ImageFilter.EDGE_ENHANCE)
+        #     st.image(edge_img)
+
+        # elif option == 'Contrast Image' :
+        #     contrast_img = ImageEnhance.Contrast(img).enhance(10) # enhance의 단계설정 가능
+        #     st.image(contrast_img)
+
+        # 저장시에 유저가 직접 디렉토리 입력하여 저장할수 있도록 만들기
+
+
+        # st.button('저장하기')
+        # direc = st.text_input('저장경로 입력')
+        # file_name = img
+        # save_upload_file(file_name, direc)
+        # st.success('Saved file : {} in {}'.format(file_name, direc))
+
+
+
+if __name__ == '__main__' :
+    main()

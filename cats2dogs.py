@@ -402,9 +402,9 @@ show_plot(A_real, B_generated, A_reconstructed)
 
 
 ## Title
-st.title(‘Streamlit Tutorial’)
+st.title("Streamlit Tutorial")
 ## Header/Subheader
-st.header(‘This is header’)
-st.subheader(‘This is subheader’)
+st.header("This is header")
+st.subheader("This is subheader")
 ## Text
-st.text(“Hello Streamlit! 이 글은 튜토리얼 입니다.”)
+st.text("Hello Streamlit! 이 글은 튜토리얼 입니다.")

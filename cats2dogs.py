@@ -8,7 +8,7 @@ Original file is located at
 
 Import Libraries
 """
-
+'''
 !pip install tensorflow-addons
 !pip install tensorflow==2.0.0-beta1
 
@@ -397,3 +397,14 @@ def show_plot(imagesX, imagesY1, imagesY2):
 	pyplot.show()
 
 show_plot(A_real, B_generated, A_reconstructed)
+
+'''
+
+
+## Title
+st.title(‘Streamlit Tutorial’)
+## Header/Subheader
+st.header(‘This is header’)
+st.subheader(‘This is subheader’)
+## Text
+st.text(“Hello Streamlit! 이 글은 튜토리얼 입니다.”)
